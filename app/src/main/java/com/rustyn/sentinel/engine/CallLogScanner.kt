@@ -25,11 +25,12 @@ class CallLogScanner @Inject constructor(
                 CallLog.Calls.TYPE
             )
             
-            // Only fetch Missed and Rejected calls
-            val selection = "${CallLog.Calls.TYPE} = ? OR ${CallLog.Calls.TYPE} = ?"
+            // Only fetch Missed, Rejected, and Blocked calls
+            val selection = "${CallLog.Calls.TYPE} = ? OR ${CallLog.Calls.TYPE} = ? OR ${CallLog.Calls.TYPE} = ?"
             val selectionArgs = arrayOf(
                 CallLog.Calls.MISSED_TYPE.toString(),
-                CallLog.Calls.REJECTED_TYPE.toString()
+                CallLog.Calls.REJECTED_TYPE.toString(),
+                CallLog.Calls.BLOCKED_TYPE.toString()
             )
 
             context.contentResolver.query(

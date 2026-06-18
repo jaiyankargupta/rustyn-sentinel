@@ -45,6 +45,13 @@ class BlockActionReceiver : BroadcastReceiver() {
                             )
                             allowlistDao.insertAllowlist(entry)
                             
+                            val existingRule = ruleDao.getRuleByPattern(number)
+                            if (existingRule != null) {
+                                ruleDao.deleteRuleById(existingRule.id)
+                                val rules = ruleDao.getActiveRules()
+                                ruleEngine.updateRules(rules)
+                            }
+                            
                             // Re-sync memory caches
                             val allowlist = allowlistDao.getAllowlistEntries()
                             ruleEngine.updateAllowlist(allowlist)

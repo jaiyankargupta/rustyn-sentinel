@@ -10,5 +10,6 @@ interface RuleRepository {
     suspend fun insertRule(rule: RuleEntity): Long
     suspend fun deleteRule(rule: RuleEntity)
     suspend fun deleteRuleById(id: Int)
+    suspend fun getRuleByPattern(pattern: String): RuleEntity?
     suspend fun updateRuleStatus(id: Int, isActive: Boolean)
 }

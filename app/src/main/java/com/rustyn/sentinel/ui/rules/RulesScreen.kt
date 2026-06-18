@@ -248,7 +248,9 @@ fun RulesScreen(
             initialPattern = prefillPattern,
             onDismiss = { showAddDialog = false },
             onConfirm = { pattern, type, desc, start, end ->
-                viewModel.addRule(pattern, type, desc, start, end)
+                viewModel.addRule(pattern, type, desc, start, end) {
+                    Toast.makeText(context, "Rule already added", Toast.LENGTH_SHORT).show()
+                }
                 showAddDialog = false
             }
         )
@@ -603,7 +605,7 @@ fun AddRuleDialog(
     )
 }
 
-data class CallLogEntry(val number: String, val name: String?, val dateStr: String)
+data class CallLogEntry(val number: String, val name: String?, val dateStr: String, var count: Int = 1)
 
 @Composable
 fun CallHistoryDialog(
@@ -653,10 +655,10 @@ fun CallHistoryDialog(
                             ) {
                                 Column {
                                     if (!log.name.isNullOrEmpty()) {
-                                        Text(log.name, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                                        Text(if (log.count > 1) "${log.name} (${log.count})" else log.name, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                                         Text(log.number, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                     } else {
-                                        Text(log.number, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
+                                        Text(if (log.count > 1) "${log.number} (${log.count})" else log.number, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
                                     }
                                     Text(log.dateStr, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                 }
@@ -697,8 +699,13 @@ private fun fetchCallLogs(context: Context): List<CallLogEntry> {
                 val name = if (nameIndex != -1) it.getString(nameIndex) else null
                 val dateMillis = it.getLong(dateIndex)
                 val dateStr = android.text.format.DateUtils.getRelativeTimeSpanString(dateMillis, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS).toString()
-                logs.add(CallLogEntry(number, name, dateStr))
-                count++
+                
+                if (logs.isNotEmpty() && logs.last().number == number) {
+                    logs.last().count++
+                } else {
+                    logs.add(CallLogEntry(number, name, dateStr))
+                    count++
+                }
             }
         }
     } catch (e: Exception) {

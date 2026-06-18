@@ -18,6 +18,8 @@ class RuleRepositoryImpl @Inject constructor(
 
     override suspend fun getRuleById(id: Int): RuleEntity? = ruleDao.getRuleById(id)
 
+    override suspend fun getRuleByPattern(pattern: String): RuleEntity? = ruleDao.getRuleByPattern(pattern)
+
     override suspend fun insertRule(rule: RuleEntity): Long {
         val result = ruleDao.insertRule(rule)
         syncEngine()
