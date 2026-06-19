@@ -11,6 +11,7 @@ import javax.inject.Singleton
 class RuleEngine @Inject constructor() {
 
     private val mutex = Mutex()
+    private val initDeferred = kotlinx.coroutines.CompletableDeferred<Unit>()
 
     private var isStrictModeEnabled: Boolean = false
 
@@ -95,6 +96,7 @@ class RuleEngine @Inject constructor() {
                 }
             }
         }
+        initDeferred.complete(Unit)
     }
 
     /**
@@ -162,9 +164,13 @@ class RuleEngine @Inject constructor() {
     /**
      * Evaluates whether an incoming call should be blocked or allowed.
      */
-    suspend fun evaluateCall(phoneNumber: String, isContact: Boolean = false): MatchResult = mutex.withLock {
-        val sanitized = sanitizeNumber(phoneNumber)
-        if (sanitized.isEmpty()) return MatchResult.Allowed
+    suspend fun evaluateCall(phoneNumber: String, isContact: Boolean = false): MatchResult {
+        // Ensure rules are loaded before evaluating
+        initDeferred.await()
+        
+        return mutex.withLock {
+            val sanitized = sanitizeNumber(phoneNumber)
+            if (sanitized.isEmpty()) return MatchResult.Allowed
 
         val candidates = getNumberCandidates(sanitized)
 
@@ -211,6 +217,7 @@ class RuleEngine @Inject constructor() {
         }
 
         return MatchResult.Allowed
+        }
     }
 
     // Helper functions

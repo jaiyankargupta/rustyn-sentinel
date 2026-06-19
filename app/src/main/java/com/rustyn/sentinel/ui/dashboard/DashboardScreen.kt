@@ -1,29 +1,33 @@
 package com.rustyn.sentinel.ui.dashboard
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rustyn.sentinel.ui.components.GlassmorphicCard
 import com.rustyn.sentinel.ui.components.InteractiveAnalyticsChart
 import com.rustyn.sentinel.ui.components.StandardStatsCard
-import com.rustyn.sentinel.ui.theme.DarkBackground
-import com.rustyn.sentinel.ui.theme.PrimarySky
-import com.rustyn.sentinel.ui.theme.TextLight
-import com.rustyn.sentinel.ui.theme.TextMuted
+import com.rustyn.sentinel.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,142 +40,285 @@ fun DashboardScreen(
     val state by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(scrollState)
-            .padding(16.dp)
+    // Entrance animation
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { 40 }
     ) {
-        // App Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .verticalScroll(scrollState)
+                .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            Column {
-                Text(
-                    text = "Rustyn Sentinel",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Text(
-                    text = "Active and protecting your device offline",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            IconButton(onClick = onNavigateToSettings) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Stats Cards Row/Grid
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            StandardStatsCard(
-                title = "Today",
-                value = "${state.blockedToday}",
-                subtitle = "Calls Screened",
-                modifier = Modifier.weight(1f)
-            )
-            StandardStatsCard(
-                title = "Weekly",
-                value = "${state.blockedThisWeek}",
-                subtitle = "Calls Screened",
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            StandardStatsCard(
-                title = "Total Blocked",
-                value = "${state.totalBlocked}",
-                subtitle = "Protected total",
-                modifier = Modifier.weight(1f)
-            )
-            StandardStatsCard(
-                title = "Rules",
-                value = "${state.activeRulesCount}",
-                subtitle = "Active matchers",
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Analytics Canvas Chart
-        Text(
-            text = "Screening Activity (Last 7 Days)",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        GlassmorphicCard {
-            InteractiveAnalyticsChart(
-                dataPoints = state.weeklyStats,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Suggestions Promo Banner
-        if (state.suggestions.isNotEmpty()) {
-            Text(
-                text = "Intelligence Alerts",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            GlassmorphicCard {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+            // ── App Header ──
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Sentinel",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextLight
+                    )
+                    Text(
+                        text = "Offline call protection active",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextMuted
+                    )
+                }
+                IconButton(
+                    onClick = onNavigateToSettings,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(DarkSurfaceVariant, CircleShape)
                 ) {
-                    Column(modifier = Modifier.weight(1.5f)) {
-                        Text(
-                            text = "New blocking suggestions",
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
+                    Icon(
+                        imageVector = Icons.Outlined.Settings,
+                        contentDescription = "Settings",
+                        tint = TextMuted,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // ── Shield Status Hero Card ──
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF0F3642), // Dark cyan/teal
+                                    Color(0xFF142036), // Deep blue
+                                    Color(0xFF101726)  // Very dark
+                                ),
+                                start = Offset.Zero,
+                                end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                            )
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Detected recurring call blocks. Review candidates for prefix rules.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = onNavigateToSuggestions,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        ),
-                        modifier = Modifier.align(Alignment.CenterVertically)
+                        .padding(24.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Review", fontWeight = FontWeight.Bold)
+                        // Animated shield
+                        val pulseTransition = rememberInfiniteTransition(label = "heroShield")
+                        val pulseAlpha by pulseTransition.animateFloat(
+                            initialValue = 0.6f,
+                            targetValue = 1f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(2000, easing = FastOutSlowInEasing),
+                                repeatMode = RepeatMode.Reverse
+                            ),
+                            label = "shieldGlow"
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(
+                                    Brush.radialGradient(
+                                        colors = listOf(
+                                            PrimarySky.copy(alpha = 0.25f * pulseAlpha),
+                                            Color.Transparent
+                                        )
+                                    ),
+                                    CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("🛡️", fontSize = 32.sp)
+                        }
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        Column {
+                            Text(
+                                text = "Protection Active",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = TextLight
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "${state.activeRulesCount} rules · ${state.totalBlocked} calls blocked",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PrimarySky,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // ── Stats Grid 2×2 ──
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                StandardStatsCard(
+                    title = "Today",
+                    value = "${state.blockedToday}",
+                    subtitle = "Screened",
+                    accentColor = PrimarySky,
+                    modifier = Modifier.weight(1f)
+                )
+                StandardStatsCard(
+                    title = "This Week",
+                    value = "${state.blockedThisWeek}",
+                    subtitle = "Screened",
+                    accentColor = AccentIndigo,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                StandardStatsCard(
+                    title = "Total",
+                    value = "${state.totalBlocked}",
+                    subtitle = "Blocked",
+                    accentColor = SuccessGreen,
+                    modifier = Modifier.weight(1f)
+                )
+                StandardStatsCard(
+                    title = "Rules",
+                    value = "${state.activeRulesCount}",
+                    subtitle = "Active",
+                    accentColor = WarningAmber,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ── Analytics Chart ──
+            Text(
+                text = "Weekly Activity",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = TextLight
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            GlassmorphicCard {
+                InteractiveAnalyticsChart(
+                    dataPoints = state.weeklyStats,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ── Intelligence Alerts ──
+            if (state.suggestions.isNotEmpty()) {
+                Text(
+                    text = "Intelligence Alerts",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextLight
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .border(
+                            width = 1.dp,
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    WarningAmber.copy(alpha = 0.2f),
+                                    Color.Transparent
+                                )
+                            ),
+                            shape = RoundedCornerShape(20.dp)
+                        ),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        WarningAmber.copy(alpha = 0.08f),
+                                        DarkSurfaceVariant.copy(alpha = 0.6f)
+                                    )
+                                )
+                            )
+                            .padding(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(WarningAmber.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("⚡", fontSize = 20.sp)
+                            }
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "${state.suggestions.size} new pattern${if (state.suggestions.size > 1) "s" else ""} detected",
+                                    color = TextLight,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Review suggestions from the pattern engine",
+                                    color = TextMuted,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            FilledTonalButton(
+                                onClick = onNavigateToSuggestions,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = WarningAmber.copy(alpha = 0.15f),
+                                    contentColor = WarningAmber
+                                ),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                Text("Review", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

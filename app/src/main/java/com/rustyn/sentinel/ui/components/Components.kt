@@ -1,16 +1,19 @@
 package com.rustyn.sentinel.ui.components
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -28,14 +31,12 @@ fun GlassmorphicCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp)),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = DarkSurfaceVariant
         ),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -49,30 +50,62 @@ fun StandardStatsCard(
     title: String,
     value: String,
     subtitle: String,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
     modifier: Modifier = Modifier
 ) {
-    GlassmorphicCard(modifier = modifier) {
-        Text(
-            text = title.uppercase(),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = value,
-            color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = subtitle,
-            color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Medium
-        )
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = DarkSurfaceVariant
+        ),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = title.uppercase(),
+                color = TextMuted,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.2.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Animated count
+            val targetVal = value.toIntOrNull()
+            if (targetVal != null) {
+                val animatedVal by animateIntAsState(
+                    targetValue = targetVal,
+                    animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+                    label = "countUp"
+                )
+                Text(
+                    text = "$animatedVal",
+                    color = TextLight,
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            } else {
+                Text(
+                    text = value,
+                    color = TextLight,
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = subtitle,
+                color = accentColor,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
 
@@ -82,10 +115,22 @@ fun EmptyState(
     description: String,
     modifier: Modifier = Modifier
 ) {
+    // Subtle pulse animation on the shield
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "shieldPulse"
+    )
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(32.dp),
+            .padding(vertical = 48.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -94,13 +139,13 @@ fun EmptyState(
         ) {
             Text(
                 text = "🛡️",
-                fontSize = 48.sp,
+                fontSize = (48 * scale).sp,
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             Text(
                 text = title,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = TextLight,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center
@@ -108,9 +153,10 @@ fun EmptyState(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = description,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = TextMuted,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
+                lineHeight = 22.sp,
                 modifier = Modifier.widthIn(max = 280.dp)
             )
         }
@@ -125,72 +171,137 @@ fun InteractiveAnalyticsChart(
     val cleanPoints = if (dataPoints.isEmpty()) listOf(0, 0, 0, 0, 0, 0, 0) else dataPoints
     val maxVal = cleanPoints.maxOrNull()?.coerceAtLeast(1) ?: 1
 
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val secondaryColor = MaterialTheme.colorScheme.secondary
+    // Animate the chart drawing
+    val animProgress = remember { Animatable(0f) }
+    LaunchedEffect(dataPoints) {
+        animProgress.snapTo(0f)
+        animProgress.animateTo(1f, animationSpec = tween(1200, easing = FastOutSlowInEasing))
+    }
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(140.dp)
-            .background(Color.Transparent)
-            .padding(top = 16.dp)
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val width = size.width
-            val height = size.height
-            val spacing = width / (cleanPoints.size - 1)
+    val primaryColor = PrimarySky
+    val glowColor = GlowCyan
 
-            val path = Path()
-            val fillPath = Path()
+    val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
-            // Calculate offset points
-            val points = cleanPoints.mapIndexed { index, valInt ->
-                val x = index * spacing
-                // Subtracting 10dp padding from bottom/top
-                val y = height - (valInt.toFloat() / maxVal.toFloat() * (height - 30.dp.toPx())) - 15.dp.toPx()
-                Offset(x, y)
+    Column(modifier = modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+                .background(Color.Transparent)
+                .padding(top = 8.dp)
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val width = size.width
+                val height = size.height - 24.dp.toPx()
+                val topPad = 12.dp.toPx()
+                val spacing = width / (cleanPoints.size - 1)
+
+                val points = cleanPoints.mapIndexed { index, valInt ->
+                    val x = index * spacing
+                    val rawY = valInt.toFloat() / maxVal.toFloat()
+                    val animatedY = rawY * animProgress.value
+                    val y = topPad + height - (animatedY * height)
+                    Offset(x, y)
+                }
+
+                // Draw grid lines
+                for (i in 0..3) {
+                    val y = topPad + (height * i / 3f)
+                    drawLine(
+                        color = BorderSubtle,
+                        start = Offset(0f, y),
+                        end = Offset(width, y),
+                        strokeWidth = 1f
+                    )
+                }
+
+                if (points.size >= 2) {
+                    // Build smooth Bézier path
+                    val linePath = Path()
+                    val fillPath = Path()
+
+                    linePath.moveTo(points.first().x, points.first().y)
+                    fillPath.moveTo(points.first().x, points.first().y)
+
+                    for (i in 1 until points.size) {
+                        val prev = points[i - 1]
+                        val curr = points[i]
+                        val cp1x = prev.x + (curr.x - prev.x) * 0.4f
+                        val cp2x = prev.x + (curr.x - prev.x) * 0.6f
+                        linePath.cubicTo(cp1x, prev.y, cp2x, curr.y, curr.x, curr.y)
+                        fillPath.cubicTo(cp1x, prev.y, cp2x, curr.y, curr.x, curr.y)
+                    }
+
+                    // Close fill path
+                    fillPath.lineTo(width, topPad + height)
+                    fillPath.lineTo(0f, topPad + height)
+                    fillPath.close()
+
+                    // Draw gradient fill
+                    drawPath(
+                        path = fillPath,
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                primaryColor.copy(alpha = 0.25f * animProgress.value),
+                                primaryColor.copy(alpha = 0.05f * animProgress.value),
+                                Color.Transparent
+                            )
+                        )
+                    )
+
+                    // Glow effect line
+                    drawPath(
+                        path = linePath,
+                        color = primaryColor.copy(alpha = 0.15f),
+                        style = Stroke(width = 8.dp.toPx(), cap = StrokeCap.Round)
+                    )
+
+                    // Main line
+                    drawPath(
+                        path = linePath,
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(GradientCyanStart, GradientCyanEnd)
+                        ),
+                        style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
+                    )
+
+                    // Data points
+                    points.forEach { point ->
+                        drawCircle(
+                            color = DarkSurface,
+                            radius = 5.dp.toPx(),
+                            center = point
+                        )
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colors = listOf(primaryColor, GradientCyanEnd),
+                                center = point,
+                                radius = 4.dp.toPx()
+                            ),
+                            radius = 3.5.dp.toPx(),
+                            center = point
+                        )
+                    }
+                }
             }
+        }
 
-            // Draw line path
-            path.moveTo(points.first().x, points.first().y)
-            fillPath.moveTo(points.first().x, points.first().y)
-
-            for (i in 1 until points.size) {
-                path.lineTo(points[i].x, points[i].y)
-                fillPath.lineTo(points[i].x, points[i].y)
-            }
-
-            // Close the fill path to the bottom of the canvas
-            fillPath.lineTo(width, height)
-            fillPath.lineTo(0f, height)
-            fillPath.close()
-
-            val fillGradient = Brush.verticalGradient(
-                colors = listOf(
-                    primaryColor.copy(alpha = 0.4f),
-                    Color.Transparent
-                )
-            )
-            drawPath(path = fillPath, brush = fillGradient)
-
-            // Draw stroke line
-            drawPath(
-                path = path,
-                color = primaryColor,
-                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
-            )
-
-            // Draw small circles at vertices
-            points.forEach { point ->
-                drawCircle(
-                    color = secondaryColor,
-                    radius = 4.dp.toPx(),
-                    center = point
-                )
-                drawCircle(
-                    color = Color.White,
-                    radius = 2.dp.toPx(),
-                    center = point
+        // Day labels
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            dayLabels.forEach { day ->
+                Text(
+                    text = day,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextSubtle,
+                    fontSize = 10.sp,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center
                 )
             }
         }

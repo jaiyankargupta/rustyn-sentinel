@@ -14,10 +14,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -29,6 +31,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -38,7 +42,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rustyn.sentinel.data.database.entity.RuleEntity
 import com.rustyn.sentinel.ui.components.EmptyState
-import com.rustyn.sentinel.ui.components.GlassmorphicCard
 import com.rustyn.sentinel.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,13 +81,13 @@ fun RulesScreen(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0.dp),
         floatingActionButton = {
-            FloatingActionButton(
+            ExtendedFloatingActionButton(
                 onClick = { showActionSheet = true },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+                containerColor = PrimarySky,
+                contentColor = DarkBackground,
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Rule")
+                Text("+  Add Rule", fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
         }
     ) { paddingValues ->
@@ -92,26 +95,66 @@ fun RulesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
             Text(
                 text = "Blocking Rules",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = TextLight
             )
             Text(
-                text = "Manage matches to intercept calls before they ring",
+                text = "Manage call interception patterns",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = TextMuted
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // ── Summary Header ──
+            if (rulesList.isNotEmpty()) {
+                val activeCount = rulesList.count { it.isActive }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(DarkSurfaceVariant)
+                        .border(1.dp, SuccessGreen.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                        .padding(horizontal = 16.dp, vertical = 16.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(SuccessGreen.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("✓", fontSize = 20.sp, color = SuccessGreen)
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = "$activeCount active rules protecting you",
+                                color = TextLight,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "${rulesList.size} total configured",
+                                color = TextMuted,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             if (rulesList.isEmpty()) {
                 EmptyState(
                     title = "No Rules Setup",
-                    description = "Create rules by clicking the '+' button to start filtering spam calls."
+                    description = "Create rules by tapping 'Add Rule' to start filtering spam calls."
                 )
             } else {
                 LazyColumn(
@@ -138,12 +181,12 @@ fun RulesScreen(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .padding(vertical = 4.dp)
-                                        .background(MaterialTheme.colorScheme.error, RoundedCornerShape(16.dp))
+                                        .padding(vertical = 2.dp)
+                                        .background(BlockRed, RoundedCornerShape(20.dp))
                                         .padding(horizontal = 20.dp),
                                     contentAlignment = alignment
                                 ) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.onError)
+                                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = DarkBackground)
                                 }
                             },
                             dismissContent = {
@@ -162,23 +205,36 @@ fun RulesScreen(
     if (showActionSheet) {
         ModalBottomSheet(
             onDismissRequest = { showActionSheet = false },
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = DarkSurface,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
                     .padding(bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text("Create New Rule", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                Text(
+                    "Create New Rule",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextLight
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Choose how to add a blocking rule",
+                    fontSize = 13.sp,
+                    color = TextMuted
+                )
+                Spacer(modifier = Modifier.height(16.dp))
                 
                 ActionItemRow(
                     icon = Icons.Default.List,
                     title = "From Call History",
                     subtitle = "Select a recent caller to block",
+                    iconColor = PrimarySky,
                     onClick = {
                         showActionSheet = false
                         showCallHistoryDialog = true
@@ -188,6 +244,7 @@ fun RulesScreen(
                     icon = Icons.Default.Person,
                     title = "From Contacts",
                     subtitle = "Select a saved contact to block",
+                    iconColor = AccentIndigo,
                     onClick = {
                         showActionSheet = false
                         contactPickerLauncher.launch(null)
@@ -197,6 +254,7 @@ fun RulesScreen(
                     icon = Icons.Default.Edit,
                     title = "Input Number",
                     subtitle = "Type an exact phone number manually",
+                    iconColor = SuccessGreen,
                     onClick = {
                         prefillType = "EXACT"
                         prefillPattern = ""
@@ -207,7 +265,8 @@ fun RulesScreen(
                 ActionItemRow(
                     icon = Icons.Default.ArrowForward,
                     title = "Number Begins With",
-                    subtitle = "Block numbers with a specific prefix (e.g. +91 140)",
+                    subtitle = "Block numbers with a specific prefix",
+                    iconColor = WarningAmber,
                     onClick = {
                         prefillType = "PREFIX"
                         prefillPattern = ""
@@ -218,7 +277,8 @@ fun RulesScreen(
                 ActionItemRow(
                     icon = Icons.Default.MoreVert,
                     title = "Number Contains",
-                    subtitle = "Block numbers containing specific digits",
+                    subtitle = "Block using wildcard pattern matching",
+                    iconColor = BlockRed,
                     onClick = {
                         prefillType = "WILDCARD"
                         prefillPattern = ""
@@ -262,27 +322,37 @@ fun ActionItemRow(
     icon: ImageVector,
     title: String,
     subtitle: String,
+    iconColor: Color = PrimarySky,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
             .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
+            .padding(vertical = 10.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(40.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)),
+                .size(44.dp)
+                .background(
+                    iconColor.copy(alpha = 0.10f),
+                    RoundedCornerShape(12.dp)
+                ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(imageVector = icon, contentDescription = title, tint = MaterialTheme.colorScheme.primary)
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = iconColor,
+                modifier = Modifier.size(22.dp)
+            )
         }
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(14.dp))
         Column {
-            Text(title, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+            Text(title, color = TextLight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = TextMuted, fontSize = 12.sp)
         }
     }
 }
@@ -331,15 +401,21 @@ fun RuleItemRow(
     rule: RuleEntity,
     onToggle: (Boolean) -> Unit
 ) {
+    val (badgeColor, badgeIcon) = when (rule.type.uppercase()) {
+        "EXACT" -> AccentIndigo to Icons.Default.Person
+        "PREFIX" -> PrimarySky to Icons.Default.ArrowForward
+        else -> BlockRed to Icons.Default.Star
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .border(1.dp, PrimarySky.copy(alpha = 0.3f), RoundedCornerShape(20.dp)),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = DarkSurfaceVariant
         ),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -347,48 +423,63 @@ fun RuleItemRow(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon Badge
-            val (badgeColor, badgeIcon) = when (rule.type.uppercase()) {
-                "EXACT" -> MaterialTheme.colorScheme.secondary to Icons.Default.Person
-                "PREFIX" -> MaterialTheme.colorScheme.primary to Icons.Default.ArrowForward
-                else -> MaterialTheme.colorScheme.error to Icons.Default.Star
-            }
-            
+            // Icon Badge with gradient tint
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .background(badgeColor.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                badgeColor.copy(alpha = 0.15f),
+                                badgeColor.copy(alpha = 0.05f)
+                            )
+                        ),
+                        RoundedCornerShape(14.dp)
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(imageVector = badgeIcon, contentDescription = null, tint = badgeColor)
+                Icon(
+                    imageVector = badgeIcon,
+                    contentDescription = null,
+                    tint = badgeColor,
+                    modifier = Modifier.size(22.dp)
+                )
             }
             
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(14.dp))
             
             // Text Content
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = rule.pattern,
-                    color = if (rule.isActive) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.titleMedium,
+                    color = if (rule.isActive) TextLight else TextMuted,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
+                    letterSpacing = 0.3.sp
                 )
                 
                 Spacer(modifier = Modifier.height(4.dp))
                 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = rule.type.uppercase(),
-                        color = badgeColor,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp
-                    )
-                    if (!rule.description.isNullOrEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .background(badgeColor.copy(alpha = 0.10f), RoundedCornerShape(4.dp))
+                            .padding(horizontal = 6.dp, vertical = 1.dp)
+                    ) {
                         Text(
-                            text = " • ${rule.description}",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = rule.type.uppercase(),
+                            color = badgeColor,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 9.sp,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                    if (!rule.description.isNullOrEmpty()) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = rule.description,
+                            color = TextSubtle,
                             style = MaterialTheme.typography.bodySmall,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -397,30 +488,36 @@ fun RuleItemRow(
                 }
                 
                 if (rule.startTime != null && rule.endTime != null) {
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(12.dp))
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = PrimarySky,
+                            modifier = Modifier.size(12.dp)
+                        )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Active: ${rule.startTime} - ${rule.endTime}",
-                            color = MaterialTheme.colorScheme.primary,
+                            text = "${rule.startTime} – ${rule.endTime}",
+                            color = PrimarySky,
                             style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 10.sp
                         )
                     }
                 }
             }
             
-            // Actions
+            // Toggle Switch
             Switch(
                 checked = rule.isActive,
                 onCheckedChange = onToggle,
                 modifier = Modifier.scale(0.8f),
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primary,
-                    uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    checkedThumbColor = DarkBackground,
+                    checkedTrackColor = PrimarySky,
+                    uncheckedThumbColor = TextSubtle,
+                    uncheckedTrackColor = DarkSurfaceVariant
                 )
             )
         }
@@ -446,18 +543,18 @@ fun AddRuleDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Configure Rule", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+            Text("Configure Rule", color = TextLight, fontWeight = FontWeight.Bold)
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Type selector TabRow-like buttons
-                Text("Rule Type", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                // Type selector
+                Text("Rule Type", color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    val types = listOf("EXACT", "PREFIX", "WILDCARD")
-                    types.forEach { type ->
+                    val types = listOf("EXACT" to AccentIndigo, "PREFIX" to PrimarySky, "WILDCARD" to BlockRed)
+                    types.forEach { (type, color) ->
                         val isSelected = selectedType == type
                         OutlinedButton(
                             onClick = {
@@ -465,45 +562,46 @@ fun AddRuleDialog(
                                 errorText = ""
                             },
                             colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                containerColor = if (isSelected) color.copy(alpha = 0.15f) else Color.Transparent,
+                                contentColor = if (isSelected) color else TextMuted
                             ),
                             modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(10.dp),
                             contentPadding = PaddingValues(horizontal = 2.dp, vertical = 8.dp),
-                            border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
+                            border = BorderStroke(1.dp, if (isSelected) color.copy(alpha = 0.5f) else BorderSubtle)
                         ) {
                             Text(type, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                         }
                     }
                 }
 
-                // Input
+                // Pattern Input
                 OutlinedTextField(
                     value = pattern,
                     onValueChange = {
                         pattern = it
                         errorText = ""
                     },
-                    label = { Text("Pattern", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    label = { Text("Pattern", color = TextMuted) },
                     placeholder = {
                         val placeholder = when (selectedType) {
                             "EXACT" -> "+918904889067"
                             "PREFIX" -> "140 or 890488"
                             else -> "89048****67"
                         }
-                        Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                        Text(placeholder, color = TextSubtle)
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                        focusedTextColor = TextLight,
+                        unfocusedTextColor = TextLight,
+                        focusedBorderColor = PrimarySky.copy(alpha = 0.5f),
+                        unfocusedBorderColor = BorderSlate,
+                        focusedContainerColor = DarkSurfaceVariant,
+                        unfocusedContainerColor = DarkSurfaceVariant
                     ),
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -511,21 +609,22 @@ fun AddRuleDialog(
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Annotation (Optional)", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    label = { Text("Annotation (Optional)", color = TextMuted) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                        focusedTextColor = TextLight,
+                        unfocusedTextColor = TextLight,
+                        focusedBorderColor = PrimarySky.copy(alpha = 0.5f),
+                        unfocusedBorderColor = BorderSlate,
+                        focusedContainerColor = DarkSurfaceVariant,
+                        unfocusedContainerColor = DarkSurfaceVariant
                     ),
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 // Time Constraints
-                Text("Time Constraints (Optional)", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("Schedule (Optional)", color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
                         onClick = {
@@ -534,10 +633,11 @@ fun AddRuleDialog(
                             }, 22, 0, false).show()
                         },
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, BorderSlate),
                         contentPadding = PaddingValues(0.dp)
                     ) {
-                        Text(startTime ?: "Start Time", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text(startTime ?: "Start", fontSize = 12.sp, color = TextLight)
                     }
 
                     OutlinedButton(
@@ -547,21 +647,22 @@ fun AddRuleDialog(
                             }, 7, 0, false).show()
                         },
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, BorderSlate),
                         contentPadding = PaddingValues(0.dp)
                     ) {
-                        Text(endTime ?: "End Time", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text(endTime ?: "End", fontSize = 12.sp, color = TextLight)
                     }
                 }
                 
                 if (startTime != null || endTime != null) {
                     TextButton(onClick = { startTime = null; endTime = null }) {
-                        Text("Clear Schedule", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                        Text("Clear Schedule", fontSize = 12.sp, color = BlockRed)
                     }
                 }
 
                 AnimatedVisibility(visible = errorText.isNotEmpty()) {
-                    Text(errorText, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                    Text(errorText, color = BlockRed, fontSize = 12.sp)
                 }
             }
         },
@@ -573,7 +674,6 @@ fun AddRuleDialog(
                         errorText = "Pattern cannot be empty"
                         return@Button
                     }
-                    // Validation based on type
                     var finalPattern = cleanPattern
                     if (selectedType == "PREFIX" && !cleanPattern.endsWith("*")) {
                         finalPattern = "$cleanPattern*"
@@ -589,19 +689,21 @@ fun AddRuleDialog(
                     onConfirm(finalPattern, selectedType, description.ifBlank { null }, startTime, endTime)
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
+                    containerColor = PrimarySky,
+                    contentColor = DarkBackground
+                ),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Text("Save", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)) {
-                Text("Cancel")
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = TextMuted)
             }
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = DarkSurface,
+        shape = RoundedCornerShape(24.dp)
     )
 }
 
@@ -640,27 +742,53 @@ fun CallHistoryDialog(
     if (hasPermission) {
         AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text("Recent Calls", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold) },
+            title = { Text("Recent Calls", color = TextLight, fontWeight = FontWeight.Bold) },
             text = {
                 if (callLogs.isEmpty()) {
-                    Text("No recent calls found.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("No recent calls found.", color = TextMuted)
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxWidth()) {
                         items(callLogs) { log ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
                                     .clickable { onSelect(log.number) }
-                                    .padding(vertical = 12.dp)
+                                    .padding(vertical = 10.dp, horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(PrimarySky.copy(alpha = 0.10f), RoundedCornerShape(10.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = null,
+                                        tint = PrimarySky,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     if (!log.name.isNullOrEmpty()) {
-                                        Text(if (log.count > 1) "${log.name} (${log.count})" else log.name, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-                                        Text(log.number, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                                        Text(
+                                            if (log.count > 1) "${log.name} (${log.count})" else log.name,
+                                            color = TextLight,
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 14.sp
+                                        )
+                                        Text(log.number, color = TextMuted, fontSize = 12.sp)
                                     } else {
-                                        Text(if (log.count > 1) "${log.number} (${log.count})" else log.number, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
+                                        Text(
+                                            if (log.count > 1) "${log.number} (${log.count})" else log.number,
+                                            color = TextLight,
+                                            fontWeight = FontWeight.Medium,
+                                            fontSize = 14.sp
+                                        )
                                     }
-                                    Text(log.dateStr, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                                    Text(log.dateStr, color = TextSubtle, fontSize = 11.sp)
                                 }
                             }
                         }
@@ -668,9 +796,10 @@ fun CallHistoryDialog(
                 }
             },
             confirmButton = {
-                TextButton(onClick = onDismiss) { Text("Cancel", color = MaterialTheme.colorScheme.primary) }
+                TextButton(onClick = onDismiss) { Text("Cancel", color = PrimarySky) }
             },
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = DarkSurface,
+            shape = RoundedCornerShape(24.dp)
         )
     }
 }
