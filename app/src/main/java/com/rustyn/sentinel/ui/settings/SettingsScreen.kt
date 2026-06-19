@@ -368,7 +368,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Sentinel operates completely offline. No servers, cloud databases, analytics scripts, or tracker networks are integrated. Your data never leaves your device.",
+                        text = "Rustyn Sentinel operates completely offline. No servers, cloud databases, analytics scripts, or tracker networks are integrated. Your data never leaves your device.",
                         color = TextMuted,
                         fontSize = 12.sp,
                         lineHeight = 18.sp

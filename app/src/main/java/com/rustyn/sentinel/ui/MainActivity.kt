@@ -328,7 +328,7 @@ fun PermissionsRequiredScreen(
         Spacer(modifier = Modifier.height(12.dp))
         
         Text(
-            text = "Sentinel needs these permissions to intercept spam calls and protect you.",
+            text = "Rustyn Sentinel needs these permissions to intercept spam calls and protect you.",
             style = MaterialTheme.typography.bodyMedium,
             color = TextMuted,
             textAlign = TextAlign.Center,
@@ -493,9 +493,9 @@ fun AnimatedSplashScreen(onSplashFinished: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Sentinel",
+                text = "Rustyn Sentinel",
                 color = TextLight,
-                style = MaterialTheme.typography.displayMedium,
+                style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
             )

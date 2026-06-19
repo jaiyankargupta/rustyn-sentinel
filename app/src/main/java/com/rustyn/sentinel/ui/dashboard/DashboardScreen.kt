@@ -63,7 +63,7 @@ fun DashboardScreen(
             ) {
                 Column {
                     Text(
-                        text = "Sentinel",
+                        text = "Rustyn Sentinel",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = TextLight
