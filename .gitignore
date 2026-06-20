@@ -39,3 +39,4 @@ build_output.log
 
 # Ignore user-specific docs
 /docs/
+/how-to-build/

@@ -60,7 +60,8 @@ class SentinelNotificationManager @Inject constructor(
         // 1. View Details Action (Deep link to App UI)
         val detailIntent = Intent(Intent.ACTION_VIEW, Uri.parse("sentinel://history_detail/$blockedCallId")).apply {
             setClass(context, MainActivity::class.java)
-            // Removed FLAG_ACTIVITY_CLEAR_TASK to prevent app restart and backstack issues
+            // Use SINGLE_TOP so if MainActivity is running, it routes via onNewIntent instead of restarting
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         val detailPendingIntent = PendingIntent.getActivity(
             context,
