@@ -181,7 +181,19 @@ fun InteractiveAnalyticsChart(
     val primaryColor = PrimarySky
     val glowColor = GlowCyan
 
-    val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    val dayLabels = remember {
+        val labels = mutableListOf<String>()
+        val format = java.text.SimpleDateFormat("EEE", java.util.Locale.getDefault())
+        for (i in 6 downTo 0) {
+            val cal = java.util.Calendar.getInstance()
+            cal.add(java.util.Calendar.DAY_OF_YEAR, -i)
+            labels.add(format.format(cal.time))
+        }
+        labels
+    }
+
+    val canvasBorderColor = BorderSubtle
+    val canvasDarkSurface = DarkSurface
 
     Column(modifier = modifier.fillMaxWidth()) {
         Box(
@@ -209,7 +221,7 @@ fun InteractiveAnalyticsChart(
                 for (i in 0..3) {
                     val y = topPad + (height * i / 3f)
                     drawLine(
-                        color = BorderSubtle,
+                        color = canvasBorderColor,
                         start = Offset(0f, y),
                         end = Offset(width, y),
                         strokeWidth = 1f
@@ -269,7 +281,7 @@ fun InteractiveAnalyticsChart(
                     // Data points
                     points.forEach { point ->
                         drawCircle(
-                            color = DarkSurface,
+                            color = canvasDarkSurface,
                             radius = 5.dp.toPx(),
                             center = point
                         )

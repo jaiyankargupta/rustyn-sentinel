@@ -85,7 +85,7 @@ fun HistoryScreen(
                 )
                 SummaryChip(
                     label = "${state.blockedCalls.count {
-                        it.timestamp > System.currentTimeMillis() - 86400000
+                        DateUtils.isToday(it.timestamp)
                     }}",
                     subtitle = "Today",
                     color = AccentIndigo,

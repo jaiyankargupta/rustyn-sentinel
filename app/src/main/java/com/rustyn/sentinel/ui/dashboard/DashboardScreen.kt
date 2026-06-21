@@ -105,9 +105,9 @@ fun DashboardScreen(
                         .background(
                             Brush.linearGradient(
                                 colors = listOf(
-                                    Color(0xFF0F3642), // Dark cyan/teal
-                                    Color(0xFF142036), // Deep blue
-                                    Color(0xFF101726)  // Very dark
+                                    HeroGradientStart,
+                                    HeroGradientMid,
+                                    HeroGradientEnd
                                 ),
                                 start = Offset.Zero,
                                 end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
